@@ -1,1 +1,1 @@
-## Définition des modules de rag
+# Define RAG modules in a class

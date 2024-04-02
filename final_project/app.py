@@ -1,5 +1,10 @@
 import streamlit as st
-from utils.const import USE_SOURCES,PROMPT_MESSAGE,START_MESSAGE
+from const import USE_SOURCES
+import rag
+
+
+START_MESSAGE = f'Veuillez poser une question : '
+PROMPT_MESSAGE = "Veuillez poser une question et appuyer sur Entrée..."
 
 
 st.set_page_config(
@@ -9,8 +14,7 @@ st.set_page_config(
 )
 
 
-model = None 
-rag = None
+query_engine =  None ### declare rag engine here 
 
 
 assistant_must_answer = True
@@ -47,32 +51,29 @@ if assistant_must_answer:
     with st.chat_message("assistant"):
         full_response = ''
         sources_data = ''
-        if model is not None :
-            prompt = model.prompts.prompt_format_without_context.format(
-                instruction=prompt)
+        with st.expander("Réponse"):
             if USE_SOURCES:
-                response = rag.query_engine.query(prompt)
+                response = None #   rag.generate_response(query_engine, prompt)
                 text_generator = response.response_gen
-            else:
-                text_generator = model.generate_response(
-                    prompt)
-
             placeholder = st.empty()
             stop_generation = False
             for item in text_generator:
                 full_response += item
                 placeholder.markdown(full_response)
             placeholder.markdown(full_response)
+        with st.expander("Sources"):
             if USE_SOURCES:
                 sources_data = response.get_formatted_sources(length=100)
-                st.write(sources_data)
-                
+                sources_text  = ""
                 for source in response.source_nodes: 
-                    print(source.metadata["file_name"], round(source.score,2))
+                    if "page_label" in source.metadata:
+                        sources_text += f"""{source.metadata["file_name"]}, page {source.metadata["page_label"]} : {str(round(source.score,2))} 
+    """
 
+                st.markdown(sources_text)
                 message = {"role": "assistant",
                         "content": full_response,
-                        "sources": sources_data}
+                        "sources": sources_text}
             else : 
                 message = {"role": "assistant",
                         "content": full_response}
